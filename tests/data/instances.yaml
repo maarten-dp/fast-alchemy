@@ -1,0 +1,110 @@
+AntCollection:
+  ref: name
+  definition:
+    name: String
+    location: String
+    formicaria: Backref|Formicarium
+  instances:
+    - name: Antopia
+      location: My bedroom
+    - name: Nomants
+      location: My yard
+    - name: Antics
+      location: My friend's house
+
+Formicarium:
+  definition:
+    name: String
+    formicarium_type: String
+    width: Integer
+    collection: relationship|AntCollection
+    colonies: Backref|AntColony
+    polymorphic:
+      identity: formicarium
+      "on": formicarium_type
+
+SandwichFormicarium|Formicarium:
+  ref: name
+  definition:
+    height: Integer
+    polymorphic:
+      identity: sandwichformicarium
+  instances:
+    - name: Specimen-1
+      collection: Antopia
+      height: 10
+      width: 2
+    - name: Specimen-2
+      collection: Antopia
+      height: 15
+      width: 3
+    - name: PAnts
+      collection: Antics
+      height: 10
+      width: 3
+
+FreeStandingFormicarium|Formicarium:
+  ref: name
+  definition:
+    depth: Integer
+    anti_escape_barrier: String
+    polymorphic:
+      identity: freestandingformicarium
+  instances:
+    - name: The yard yokels
+      collection: Nomants
+      width: 50
+      depth: 40
+      anti_escape_barrier:
+    - name: The Free SociAnty
+      collection: Antics
+      width: 30
+      depth: 30
+      anti_escape_barrier: liquid PTFE
+
+AntColony:
+  ref: name
+  definition:
+    name: String
+    latin_name: String
+    queen_size: Float
+    worker_size: Float
+    color: String
+    formicarium: relationship|Formicarium
+  instances:
+    - name: Argentine Ant
+      latin_name: Linepithema humile
+      queen_size: 1.6
+      worker_size: 1.6
+      color: brown
+      formicarium: Specimen-1
+    - name: Black House Ant
+      latin_name: Ochetellus
+      queen_size: 2.5
+      worker_size: 2.5
+      color: black
+      formicarium: Specimen-2
+    - name: Bulldog Ant
+      latin_name: Mymecia
+      queen_size: 18
+      worker_size: 18
+      color: red
+      formicarium: PAnts
+    - name: Carpenter Ant
+      latin_name: Camponotus pennsylvanicus
+      queen_size: 12
+      worker_size: 6
+      color: black
+      formicarium: The yard yokels
+    - name: Fire Ant
+      latin_name: Solenopsis spp
+      queen_size: 18
+      worker_size: 18
+      color: red
+      formicarium: The Free SociAnty
+    - name: Garden Ant
+      latin_name: Lasius niger
+      queen_size: 15
+      worker_size: 5
+      color: black
+      formicarium: The Free SociAnty
