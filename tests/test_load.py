@@ -11,8 +11,12 @@ DATA_DIR = os.path.join(ROOT_DIR, 'data')
 
 def test_it_can_load_instances():
     app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///:memory:"
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db = SQLAlchemy(app)
     fa = FastAlchemy(db)
+    with fa:
+        fa.load(os.path.join(DATA_DIR, 'instances.yaml'))
     fa.load(os.path.join(DATA_DIR, 'instances.yaml'))
     assert len(db.AntCollection.query.all()) == 3
     assert len(db.SandwichFormicarium.query.all()) == 3

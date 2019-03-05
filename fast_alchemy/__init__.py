@@ -94,7 +94,7 @@ class ClassBuilder:
 
         Klass = type(class_name, class_info.inherits_class, class_attributes)
         setattr(self.db, class_name, Klass)
-        return class_name
+        return Klass
 
 
 class InstanceLoader:
@@ -122,6 +122,9 @@ class InstanceLoader:
 class FastAlchemy:
     def __init__(self, db, class_builder=None, instance_loader=None):
         self.db = db
+        self.class_registry = {}
+        self._context_registry = {}
+        self.in_context = False
 
     def _parse_class_definition(self, class_definition):
         inherits_class = (self.db.Model,)
@@ -147,14 +150,17 @@ class FastAlchemy:
     def load_models(self, file_or_raw, class_builder=None):
         if not class_builder:
             class_builder = ClassBuilder(self.db).build_class
-
-        classes = []
         raw_models = self._load_file(file_or_raw)
 
+        registry = {}
         for class_definition, fields in raw_models.items():
             class_info = self._parse_class_definition(class_definition)
-            class_builder(class_info, fields['definition'])
-        self.db.create_all()
+            klass = class_builder(class_info, fields['definition'])
+            registry[class_info.class_name] = klass
+        self.class_registry.update(registry)
+        if self.in_context:
+            self._context_registry.update(registry)
+        self.create_models(registry.keys())
 
     def load_instances(self, file_or_raw, instance_loader=None):
         if not instance_loader:
@@ -171,3 +177,36 @@ class FastAlchemy:
                 class_info, fields['ref'], fields['instances'], instance_refs)
         self.db.session.add_all(instance_refs.values())
         self.db.session.commit()
+
+    def __enter__(self):
+        self.in_context = True
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.in_context = False
+        self.drop_models(models=self._context_registry.keys())
+        self._context_registry = {}
+
+    def get_tables(self, models=None):
+        if models == None:
+            models = self.class_registry.keys()
+        return [v.__table__ for (k,v) in self.class_registry.items() if k in models]
+
+    def create_models(self, models=None):
+        self.execute_for(self.get_tables(models), 'create_all')
+
+    def drop_models(self, models=None):
+        self.execute_for(self.get_tables(models), 'drop_all')
+        for class_name in models or self.class_registry.keys():
+            reg = self.db.Model._decl_class_registry['_sa_module_registry']
+            reg.contents[__name__]._remove_item(class_name)
+            self.db.Model._decl_class_registry.pop(class_name)
+            self.db.Model.metadata.remove(
+                self.db.Model.metadata.tables[class_name.lower()])
+            delattr(self.db, class_name)
+            self.class_registry = {}
+
+    def execute_for(self, tables, operation):
+        op = getattr(self.db.Model.metadata, operation)
+        app = self.db.get_app(None)
+        op(bind=self.db.get_engine(app, None), tables=tables)
