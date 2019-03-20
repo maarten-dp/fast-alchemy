@@ -2,6 +2,7 @@ import os
 from collections import defaultdict, namedtuple
 import copy
 
+import sqlalchemy as sa
 from sqlalchemy.inspection import inspect as sqla_inspect
 
 from .helpers import ordered_load, scan_current_models
@@ -9,6 +10,7 @@ from .helpers import ordered_load, scan_current_models
 ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')
 NO_COLUMN_FOR = ['relationship']
+FIELD_LOCATIONS = [sa, sa.orm]
 
 
 class FieldBuilder:
@@ -24,18 +26,24 @@ class FieldBuilder:
             fields[fk_name] = fk
             kwargs['backref'] = backrefs[class_name][field_info.field_args[0]]
 
-        field_type = getattr(self.db, field_info.field_definition)
+        field_type = None
+        for location in FIELD_LOCATIONS:
+            if hasattr(location, field_info.field_definition):
+                field_type = getattr(location, field_info.field_definition)
+        if not field_type:
+            raise Exception('{} could not be found'.format(field_type))
+
         field = field_type(*field_info.field_args, **kwargs)
         if field_info.field_definition not in NO_COLUMN_FOR:
-            field = self.db.Column(field_info.field_name, field)
+            field = sa.Column(field_info.field_name, field)
         fields[field_info.field_name] = field
         return fields
 
     def _build_relation(self, field_info):
         fk_name = '{}_id'.format(field_info.field_name)
         fk_relation = '{}.id'.format(field_info.field_args[0].lower())
-        fk = self.db.Column(
-            fk_name, self.db.Integer, self.db.ForeignKey(fk_relation))
+        fk = sa.Column(
+            fk_name, sa.Integer, sa.ForeignKey(fk_relation))
         return fk_name, fk
 
 
@@ -69,12 +77,12 @@ class ClassBuilder:
         return mapper_args
 
     def _build_pk(self, class_info):
-        pk_args = [self.db.Integer]
+        pk_args = [sa.Integer]
         if self.db.Model not in class_info.inherits_class:
             inherits_name = class_info.inherits_name
             fk_id = '{}.id'.format(class_info.inherits_name.lower())
-            pk_args.append(self.db.ForeignKey(fk_id))
-        return self.db.Column(*pk_args, primary_key=True)
+            pk_args.append(sa.ForeignKey(fk_id))
+        return sa.Column(*pk_args, primary_key=True)
         
     def build_class(self, class_info, fields):
         class_name = class_info.class_name
@@ -120,19 +128,20 @@ class InstanceLoader:
 
 
 class FastAlchemy:
-    def __init__(self, db, class_builder=None, instance_loader=None):
-        self.db = db
+    def __init__(self, base, session):
+        self.Model = base
+        self.session = session
         self.class_registry = {}
         self._context_registry = {}
         self.in_context = False
 
     def _parse_class_definition(self, class_definition):
-        inherits_class = (self.db.Model,)
+        inherits_class = (self.Model,)
         class_name = class_definition
         inherits_name = None
         if '|' in class_definition:
             class_name, inherits_name = class_definition.split('|')
-            inherits_class = (getattr(self.db, inherits_name),)
+            inherits_class = (getattr(self, inherits_name),)
         return ClassInfo(class_name, inherits_class, inherits_name)
 
     def _load_file(self, file_or_raw):
@@ -149,7 +158,7 @@ class FastAlchemy:
 
     def load_models(self, file_or_raw, class_builder=None):
         if not class_builder:
-            class_builder = ClassBuilder(self.db).build_class
+            class_builder = ClassBuilder(self).build_class
         raw_models = self._load_file(file_or_raw)
 
         registry = {}
@@ -164,8 +173,8 @@ class FastAlchemy:
 
     def load_instances(self, file_or_raw, instance_loader=None):
         if not instance_loader:
-            classes = scan_current_models(self.db)
-            instance_loader = InstanceLoader(self.db, classes).load_instance
+            classes = scan_current_models(self)
+            instance_loader = InstanceLoader(self, classes).load_instance
 
         raw_instances = self._load_file(file_or_raw)
         instance_refs = {}
@@ -175,8 +184,8 @@ class FastAlchemy:
             class_info = self._parse_class_definition(class_definition)
             instance_loader(
                 class_info, fields['ref'], fields['instances'], instance_refs)
-        self.db.session.add_all(instance_refs.values())
-        self.db.session.commit()
+        self.session.add_all(instance_refs.values())
+        self.session.commit()
 
     def __enter__(self):
         self.in_context = True
@@ -198,15 +207,19 @@ class FastAlchemy:
     def drop_models(self, models=None):
         self.execute_for(self.get_tables(models), 'drop_all')
         for class_name in models or self.class_registry.keys():
-            reg = self.db.Model._decl_class_registry['_sa_module_registry']
+            reg = self.Model._decl_class_registry['_sa_module_registry']
             reg.contents[__name__]._remove_item(class_name)
-            self.db.Model._decl_class_registry.pop(class_name)
-            self.db.Model.metadata.remove(
-                self.db.Model.metadata.tables[class_name.lower()])
-            delattr(self.db, class_name)
+            self.Model._decl_class_registry.pop(class_name)
+            self.Model.metadata.remove(
+                self.Model.metadata.tables[class_name.lower()])
+            delattr(self, class_name)
             self.class_registry = {}
 
     def execute_for(self, tables, operation):
-        op = getattr(self.db.Model.metadata, operation)
-        app = self.db.get_app(None)
-        op(bind=self.db.get_engine(app, None), tables=tables)
+        op = getattr(self.Model.metadata, operation)
+        op(bind=self.session.bind, tables=tables)
+
+
+class FlaskFastAlchemy(FastAlchemy):
+    def __init__(self, db):
+        super().__init__(db.Model, db.session)
