@@ -20,15 +20,12 @@ Formicarium:
     collection: relationship|AntCollection
     colonies: Backref|AntColony
     polymorphic:
-      identity: formicarium
       "on": formicarium_type
 
 SandwichFormicarium|Formicarium:
   ref: name
   definition:
     height: Integer
-    polymorphic:
-      identity: sandwichformicarium
   instances:
     - name: Specimen-1
       collection: Antopia
@@ -48,8 +45,6 @@ FreeStandingFormicarium|Formicarium:
   definition:
     depth: Integer
     anti_escape_barrier: String
-    polymorphic:
-      identity: freestandingformicarium
   instances:
     - name: The yard yokels
       collection: Nomants

@@ -11,12 +11,17 @@ ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')
 NO_COLUMN_FOR = ['relationship']
 FIELD_LOCATIONS = [sa, sa.orm]
+OPTIONS = None
+
+
+class Options:
+    def __init__(self, **kwargs):
+        self.instance_loader = kwargs.pop('instance_loader', InstanceLoader)
+        self.class_builder = kwargs.pop('class_builder', ClassBuilder)
+        self.field_builder = kwargs.pop('field_builder', FieldBuilder)
 
 
 class FieldBuilder:
-    def __init__(self, db):
-        self.db = db
-
     def build_field(self, field_info, class_name, backrefs):
         fields = {}
         kwargs = {}
@@ -48,11 +53,9 @@ class FieldBuilder:
 
 
 class ClassBuilder:
-    def __init__(self, db, field_builder=None):
+    def __init__(self, db, field_builder):
         self.db = db
         self.backrefs = defaultdict(dict)
-        if not field_builder:
-            field_builder = FieldBuilder(db)
         self.field_builder = field_builder.build_field
 
     def _parse_field(self, field_name, field_definition):
@@ -92,8 +95,10 @@ class ClassBuilder:
             '__tablename__': tablename,
             'id': self._build_pk(class_info)
         }
-        if 'polymorphic' in fields:
-            definition = self._prepare_polymorphic(fields.pop('polymorphic'))
+        if class_info.inherits_name or 'polymorphic' in fields:
+            polymorphic_def = fields.pop('polymorphic', {})
+            polymorphic_def['identity'] = class_info.class_name.lower()
+            definition = self._prepare_polymorphic(polymorphic_def)
             class_attributes['__mapper_args__'] = definition
 
         for field_info in self._parse_fields(fields, class_name):
@@ -128,12 +133,13 @@ class InstanceLoader:
 
 
 class FastAlchemy:
-    def __init__(self, base, session):
+    def __init__(self, base, session, **kwargs):
         self.Model = base
         self.session = session
         self.class_registry = {}
         self._context_registry = {}
         self.in_context = False
+        self.options = Options(**kwargs)
 
     def _parse_class_definition(self, class_definition):
         inherits_class = (self.Model,)
@@ -141,7 +147,7 @@ class FastAlchemy:
         inherits_name = None
         if '|' in class_definition:
             class_name, inherits_name = class_definition.split('|')
-            inherits_class = (getattr(self, inherits_name),)
+            inherits_class = (self.class_registry[inherits_name],)
         return ClassInfo(class_name, inherits_class, inherits_name)
 
     def _load_file(self, file_or_raw):
@@ -156,9 +162,9 @@ class FastAlchemy:
         self.load_models(raw)
         self.load_instances(raw)
 
-    def load_models(self, file_or_raw, class_builder=None):
-        if not class_builder:
-            class_builder = ClassBuilder(self).build_class
+    def load_models(self, file_or_raw):
+        field_buider = self.options.field_builder()
+        class_builder = self.options.class_builder(self, field_buider).build_class
         raw_models = self._load_file(file_or_raw)
 
         registry = {}
@@ -166,15 +172,15 @@ class FastAlchemy:
             class_info = self._parse_class_definition(class_definition)
             klass = class_builder(class_info, fields['definition'])
             registry[class_info.class_name] = klass
-        self.class_registry.update(registry)
+            self.class_registry[class_info.class_name] = klass
         if self.in_context:
             self._context_registry.update(registry)
         self.create_models(registry.keys())
 
-    def load_instances(self, file_or_raw, instance_loader=None):
-        if not instance_loader:
-            classes = scan_current_models(self)
-            instance_loader = InstanceLoader(self, classes).load_instance
+    def load_instances(self, file_or_raw):
+        classes = scan_current_models(self)
+        self.class_registry.update(classes)
+        instance_loader = self.options.instance_loader(self, classes).load_instance
 
         raw_instances = self._load_file(file_or_raw)
         instance_refs = {}
