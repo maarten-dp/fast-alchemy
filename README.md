@@ -14,7 +14,7 @@ Populating a database using yaml and SQLA is not an oddity, but so far fast-alch
 
 
 ## Defining a model
-Before we can start populating our database, we need a database structure. So let's start with defining a model to set us on our way. 
+Before we can start populating our database, we need a database structure. So let's start with defining a model to set us on our way.
 
 Note that the models are being interpreted as we go, that means that every reference you make to other instances or classes must already have been define on lines prior to the referencing line. An exception to this is back-refs, as they are a chicken and egg conundrum.
 

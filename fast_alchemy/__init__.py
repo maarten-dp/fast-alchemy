@@ -1,6 +1,6 @@
+import copy
 import os
 from collections import defaultdict, namedtuple
-import copy
 
 import sqlalchemy as sa
 from sqlalchemy.inspection import inspect as sqla_inspect
@@ -47,8 +47,7 @@ class FieldBuilder:
     def _build_relation(self, field_info):
         fk_name = '{}_id'.format(field_info.field_name)
         fk_relation = '{}.id'.format(field_info.field_args[0].lower())
-        fk = sa.Column(
-            fk_name, sa.Integer, sa.ForeignKey(fk_relation))
+        fk = sa.Column(fk_name, sa.Integer, sa.ForeignKey(fk_relation))
         return fk_name, fk
 
 
@@ -69,7 +68,8 @@ class ClassBuilder:
         for field_name, field_definition in fields.items():
             field_info = self._parse_field(field_name, field_definition)
             if field_info.field_definition == 'Backref':
-                self.backrefs[field_info.field_args[0]][class_name] = field_name
+                self.backrefs[field_info.
+                              field_args[0]][class_name] = field_name
             else:
                 yield field_info
 
@@ -86,7 +86,7 @@ class ClassBuilder:
             fk_id = '{}.id'.format(class_info.inherits_name.lower())
             pk_args.append(sa.ForeignKey(fk_id))
         return sa.Column(*pk_args, primary_key=True)
-        
+
     def build_class(self, class_info, fields):
         class_name = class_info.class_name
         tablename = class_name.lower()
@@ -142,12 +142,12 @@ class FastAlchemy:
         self.options = Options(**kwargs)
 
     def _parse_class_definition(self, class_definition):
-        inherits_class = (self.Model,)
+        inherits_class = (self.Model, )
         class_name = class_definition
         inherits_name = None
         if '|' in class_definition:
             class_name, inherits_name = class_definition.split('|')
-            inherits_class = (self.class_registry[inherits_name],)
+            inherits_class = (self.class_registry[inherits_name], )
         return ClassInfo(class_name, inherits_class, inherits_name)
 
     def _load_file(self, file_or_raw):
@@ -156,7 +156,7 @@ class FastAlchemy:
             with open(file_or_raw, 'r') as fh:
                 raw = ordered_load(fh)
         return raw
-        
+
     def load(self, filepath):
         raw = self._load_file(filepath)
         self.load_models(raw)
@@ -164,7 +164,8 @@ class FastAlchemy:
 
     def load_models(self, file_or_raw):
         field_buider = self.options.field_builder()
-        class_builder = self.options.class_builder(self, field_buider).build_class
+        class_builder = self.options.class_builder(self,
+                                                   field_buider).build_class
         raw_models = self._load_file(file_or_raw)
 
         registry = {}
@@ -180,7 +181,8 @@ class FastAlchemy:
     def load_instances(self, file_or_raw):
         classes = scan_current_models(self)
         self.class_registry.update(classes)
-        instance_loader = self.options.instance_loader(self, classes).load_instance
+        instance_loader = self.options.instance_loader(self,
+                                                       classes).load_instance
 
         raw_instances = self._load_file(file_or_raw)
         instance_refs = {}
@@ -188,8 +190,8 @@ class FastAlchemy:
             if not fields.get('instances'):
                 continue
             class_info = self._parse_class_definition(class_definition)
-            instance_loader(
-                class_info, fields['ref'], fields['instances'], instance_refs)
+            instance_loader(class_info, fields['ref'], fields['instances'],
+                            instance_refs)
         self.session.add_all(instance_refs.values())
         self.session.commit()
 
@@ -205,7 +207,10 @@ class FastAlchemy:
     def get_tables(self, models=None):
         if models == None:
             models = self.class_registry.keys()
-        return [v.__table__ for (k,v) in self.class_registry.items() if k in models]
+        return [
+            v.__table__ for (k, v) in self.class_registry.items()
+            if k in models
+        ]
 
     def create_models(self, models=None):
         self.execute_for(self.get_tables(models), 'create_all')

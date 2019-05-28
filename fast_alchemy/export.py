@@ -1,13 +1,10 @@
 from collections import defaultdict
-import sqlalchemy as sa
 
-from fast_alchemy import FastAlchemy, Options, FieldInfo, ClassInfo
+import sqlalchemy as sa
+from fast_alchemy import ClassInfo, FastAlchemy, FieldInfo, Options
 
 NO_COLUMN_FOR = ['relationship']
-FIELD_LOCATION_STRINGS = {
-    sa: 'sa',
-    sa.orm: 'sa.orm'
-}
+FIELD_LOCATION_STRINGS = {sa: 'sa', sa.orm: 'sa.orm'}
 
 COLUMN_TEMPLATE = """    {} = sa.Column({}{})"""
 MAPPER_TEMPLATE = """    __mapper_args__ = {{
@@ -67,12 +64,14 @@ class FieldExporter:
         for location in FIELD_LOCATION_STRINGS:
             if hasattr(location, field_info.field_definition):
                 location_str = FIELD_LOCATION_STRINGS[location]
-                field_type = '{}.{}'.format(location_str, field_info.field_definition)
+                field_type = '{}.{}'.format(location_str,
+                                            field_info.field_definition)
         if not field_type:
             raise Exception('{} could not be found'.format(field_type))
 
         field_args = ', '.join(field_info.field_args)
-        field_kwargs = ', '.join(['{}={}'.format(k, v) for k, v in kwargs.items()])
+        field_kwargs = ', '.join(
+            ['{}={}'.format(k, v) for k, v in kwargs.items()])
         field_params = field_args or field_kwargs
         if field_args and field_kwargs:
             field_params = ', '.join([field_args, field_kwargs])
@@ -112,7 +111,8 @@ class ClassExporter:
         for field_name, field_definition in fields.items():
             field_info = self._parse_field(field_name, field_definition)
             if field_info.field_definition == 'Backref':
-                self.backrefs[field_info.field_args[0]][class_name] = field_name
+                self.backrefs[field_info.
+                              field_args[0]][class_name] = field_name
             else:
                 yield field_info
 
@@ -130,7 +130,7 @@ class ClassExporter:
             pk_args.append("sa.ForeignKey('{}')".format(fk_id))
         pk_args.append('primary_key=True')
         return COLUMN_TEMPLATE.format('id', 'sa.Integer, ', ', '.join(pk_args))
-        
+
     def build_class(self, class_info, fields):
         class_name = class_info.class_name
         tablename = class_name.lower()

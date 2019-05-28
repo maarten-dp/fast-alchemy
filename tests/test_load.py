@@ -1,14 +1,13 @@
+import importlib
 import os
 import tempfile
-import importlib
 
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-import sqlalchemy as sa
 import pytest
-
+import sqlalchemy as sa
 from fast_alchemy import FastAlchemy, FlaskFastAlchemy
 from fast_alchemy.export import FastAlchemyExporter
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 
 ROOT_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
@@ -17,8 +16,10 @@ DATA_DIR = os.path.join(ROOT_DIR, 'data')
 @pytest.fixture(scope='function')
 def temp_file(request):
     _, path = tempfile.mkstemp(suffix='.py')
+
     def remove_file():
         os.remove(path)
+
     request.addfinalizer(remove_file)
     return path
 
@@ -27,7 +28,8 @@ def test_it_can_load_instances():
     engine = sa.create_engine('sqlite:///:memory:')
     Base = sa.ext.declarative.declarative_base()
     Base.metadata.bind = engine
-    Session = sa.orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Session = sa.orm.sessionmaker(
+        autocommit=False, autoflush=False, bind=engine)
     session = sa.orm.scoped_session(Session)
 
     fa = FastAlchemy(Base, session)
