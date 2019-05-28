@@ -3,7 +3,8 @@ from collections import OrderedDict
 import yaml
 
 
-# credit to https://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
+# credit to https://stackoverflow.com/
+# questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
 def ordered_load(stream, Loader=yaml.SafeLoader,
                  object_pairs_hook=OrderedDict):
     class OrderedLoader(Loader):

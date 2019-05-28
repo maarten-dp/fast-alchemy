@@ -1,8 +1,7 @@
-import copy
-import os
 from collections import defaultdict, namedtuple
 
 import sqlalchemy as sa
+from sqlalchemy import orm
 from sqlalchemy.inspection import inspect as sqla_inspect
 
 from .helpers import ordered_load, scan_current_models
@@ -10,7 +9,7 @@ from .helpers import ordered_load, scan_current_models
 ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')
 NO_COLUMN_FOR = ['relationship']
-FIELD_LOCATIONS = [sa, sa.orm]
+FIELD_LOCATIONS = [sa, orm]
 OPTIONS = None
 
 
@@ -82,7 +81,6 @@ class ClassBuilder:
     def _build_pk(self, class_info):
         pk_args = [sa.Integer]
         if self.db.Model not in class_info.inherits_class:
-            inherits_name = class_info.inherits_name
             fk_id = '{}.id'.format(class_info.inherits_name.lower())
             pk_args.append(sa.ForeignKey(fk_id))
         return sa.Column(*pk_args, primary_key=True)
@@ -205,7 +203,7 @@ class FastAlchemy:
         self._context_registry = {}
 
     def get_tables(self, models=None):
-        if models == None:
+        if models is None:
             models = self.class_registry.keys()
         return [
             v.__table__ for (k, v) in self.class_registry.items()

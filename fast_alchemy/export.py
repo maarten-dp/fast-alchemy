@@ -125,7 +125,6 @@ class ClassExporter:
     def _build_pk(self, class_info):
         pk_args = []
         if 'Base' not in class_info.inherits_class:
-            inherits_name = class_info.inherits_name
             fk_id = '{}.id'.format(class_info.inherits_name.lower())
             pk_args.append("sa.ForeignKey('{}')".format(fk_id))
         pk_args.append('primary_key=True')
