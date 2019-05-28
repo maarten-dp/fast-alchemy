@@ -57,12 +57,6 @@ def test_it_can_load_from_flask_sqlalchemy():
 
 
 def test_it_can_export_models_to_python_code(temp_file):
-    # engine = sa.create_engine('sqlite:///:memory:')
-    # Base = sa.ext.declarative.declarative_base()
-    # Base.metadata.bind = engine
-    # Session = sa.orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    # session = sa.orm.scoped_session(Session)
-
     fa = FastAlchemyExporter()
     with open(os.path.join(DATA_DIR, temp_file), 'w') as fh:
         fa.export_to_python(os.path.join(DATA_DIR, 'instances.yaml'), fh)

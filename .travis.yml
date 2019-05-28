@@ -1,0 +1,24 @@
+language: python
+python:
+- 3.6
+install:
+- pip install -r requirements-dev.txt
+- pip install .
+jobs:
+  include:
+  - stage: test
+    script: pytest
+  - stage: linter
+    script: pre-commit run --all-files
+after_success:
+- codecov
+deploy:
+  provider: pypi
+  distributions: sdist bdist_wheel
+  user: maartendp
+  password:
+    secure: nMxpm5uu+QG+3TRlRtYNeixKfV7tLTVr/fRl87Ywi0KibOjiFT7CTtCeTI6OP5fkSDCaCyMIaJ1SeGxK8WEYpFr2H4ahB/Mm2gHVN0VPDI16la+IMgaluwiMLmuRnIYxrZprbg7ZXLSNUJX0fBmExiBioRVZbbSa8CLUBqlAHuj4uN0YU/hSZ5G2Al08cdJbqqTG5SzSjOXbZcFQfBjzXQFqzG8yc6Q9BsvH6rhlpWaIOduc7FdlyGO3vYxlq2xWCl6x9tK7/9aahE2xy6jFXD+1i4vH978VHks0dEPkfzaieIIt4UwAk16X4atTcZvvPHzo6xGPu9SrOS08Y8xk+2Isb1S4avb6m/Uf39OZbd8k4jsmNYnN57ADQOq2bZYDZo5H8jtreGX1FQlQM8k68KwIXywatylA528sSLDupm90zWx8VMLkt92xKVohIRXn07O2KWQK2nDyWrHGVJJY1NpZxqXxicX36CTybdJRWlxPskYAmoiMwhSnH98nBQ5WkWP/9A4glFyh5dzpTdq2kFh0S9W/90vcHkW+ScZVrMs/kc/hvuvfpappKnd+JXSR/c4xlS1+OA8XOultsxy1liMieAJx+yA1CC+NsvNGgnRpuu5npns7Nev1OOkV3udgebVaeXFrfzBgCZNsNZ39k/YFbOLgFIrVViLMohEALdY=
+  on:
+    tags: true
+    repo: maarten-dp/fast-alchemy
+    python: 3.6

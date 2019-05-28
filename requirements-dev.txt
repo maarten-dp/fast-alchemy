@@ -1,0 +1,10 @@
+-r requirements.txt
+codecov
+flake8
+isort
+
+pre-commit
+pytest-cov
+
+pytest>=3.6
+yapf
