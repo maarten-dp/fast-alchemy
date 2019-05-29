@@ -1,5 +1,5 @@
 AntCollection:
-  ref: name
+  ref: name,location
   definition:
     name: String
     location: String
@@ -11,6 +11,8 @@ AntCollection:
       location: My yard
     - name: Antics
       location: My friend's house
+    - name: Antopia
+      location: My bedroom at my father's
 
 Formicarium:
   definition:
@@ -28,15 +30,15 @@ SandwichFormicarium|Formicarium:
     height: Integer
   instances:
     - name: Specimen-1
-      collection: Antopia
+      collection: Antopia,My bedroom
       height: 10
       width: 2
     - name: Specimen-2
-      collection: Antopia
+      collection: Antopia,My bedroom at my father's
       height: 15
       width: 3
     - name: PAnts
-      collection: Antics
+      collection: Antics,My friend's house
       height: 10
       width: 3
 
@@ -47,12 +49,12 @@ FreeStandingFormicarium|Formicarium:
     anti_escape_barrier: String
   instances:
     - name: The yard yokels
-      collection: Nomants
+      collection: Nomants,My yard
       width: 50
       depth: 40
       anti_escape_barrier:
     - name: The Free SociAnty
-      collection: Antics
+      collection: Antics,My friend's house
       width: 30
       depth: 30
       anti_escape_barrier: liquid PTFE

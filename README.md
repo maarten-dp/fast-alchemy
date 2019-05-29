@@ -122,9 +122,41 @@ As you can see, pretty straightforward. The `instances` key holds a list of key/
 
 Keep in mind that, here as well, the file is read and evaluated with an interpretive mindset. This means that if you reference instances, they will need to have been defined earlier in the file.
 
+### Composite key referencing
+
+If none of your columns are supposed to be unique, you can compose a unique reference by comma separating the columns you wish to use as the reference key.
+
+```yaml
+  ref: name,width
+```
+
+On the instance creation side, you can then reference your relation as followed:
+
+```python
+Formicarium:
+  ref: name,width
+  definition:
+    name: String
+    width: Integer
+  instances:
+    - name: PedAntic
+      width: 10
+    - name: PedAntic
+      widt: 15
+
+AntColony:
+  ref: name
+  definition:
+    name: String
+    formicarium: relationship|Formicarium
+  instances:
+    - name: Argentine Ant
+      formicarium: PedAntic,10
+```
+
 ## Interacting with loaded models in your code
 
-While fast-alchemy is loading the models, the model classes are added to the fast-alchemy instance that is creating them. After the load is finished, you can access the model classes as an attribute of the fast-aclhemy instance
+While fast-alchemy is loading the models, the model classes are added to the fast-alchemy instance that is creating them. After the load is finished, you can access the model classes as an attribute of the fast-alchemy instance
 
 ```python
 engine = sa.create_engine('sqlite:///:memory:')

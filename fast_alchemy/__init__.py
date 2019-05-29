@@ -124,10 +124,24 @@ class InstanceLoader:
         klass = self.classes[class_info.class_name]
         for definition in instances:
             for relation in self._scan_relations(klass):
-                related_instance = instance_refs[definition[relation]]
+                clean_ref = self.clean_ref(definition[relation])
+                related_instance = instance_refs[clean_ref]
                 definition[relation] = related_instance
             instance = klass(**definition)
-            instance_refs[definition[ref_name]] = instance
+            instance_refs[self.build_ref(definition, ref_name)] = instance
+
+    def build_ref(self, definition, ref_name):
+        names = []
+        for name in ref_name.split(','):
+            name = name.strip()
+            names.append(definition[name])
+        return ','.join(names)
+
+    def clean_ref(self, ref_name):
+        names = []
+        for name in ref_name.split(','):
+            names.append(name.strip())
+        return ','.join(names)
 
 
 class FastAlchemy:
