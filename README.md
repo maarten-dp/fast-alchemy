@@ -355,6 +355,19 @@ class AntColony(Base):
 Base.metadata.create_all()
 ```
 
+## Flask-SQLAlchemy integration
+
+Fear not, you're still able to use fast-alchemy if you're developing a flask application. The library behaves exactly the same but instead of importing `FastAlchemy` you can import `FlaskFastAlchemy` to load your models.
+
+```python
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///:memory:"
+db = SQLAlchemy(app)
+
+fa = FlaskFastAlchemy(db)
+fa.load(os.path.join(DATA_DIR, 'instances.yaml'))
+```
+
 ## Conclusion
 
 I spent more time writing this readme than I did writing the code.
