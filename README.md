@@ -132,7 +132,7 @@ If none of your columns are supposed to be unique, you can compose a unique refe
 
 On the instance creation side, you can then reference your relation as followed:
 
-```python
+```yaml
 Formicarium:
   ref: name,width
   definition:
