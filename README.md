@@ -16,7 +16,7 @@ Populating a database using yaml and SQLA is not an oddity, but so far fast-alch
 ## Defining a model
 Before we can start populating our database, we need a database structure. So let's start with defining a model to set us on our way.
 
-Note that the models are being interpreted as we go, that means that every reference you make to other instances or classes must already have been define on lines prior to the referencing line. An exception to this is back-refs, as they are a chicken and egg conundrum.
+Note that the models are being interpreted as we go, this means that every reference you make to other instances or classes must already have been defined on lines prior to the referencing line. An exception to this is back-refs, as they are a chicken and egg conundrum.
 
 ```yaml
 Formicarium:
@@ -34,7 +34,7 @@ Seems pretty straightforward, but let's go over it line by line anyway.
 ```yaml
 Formicarium:
 ```
-All root keys will be seen as models, in this case we indicate that we want an SQLA model named `AntCollection`.
+All root keys will be seen as models, in this case we indicate that we want an SQLA model named `Formicarium`.
 
 In the interest of simplicity, all fast-alchemy SQLA models will be given an `id` column as primary key.
 
@@ -58,12 +58,12 @@ The `definition` keyword indicates the block where we want to define our actual 
 ```yaml
     collection: relationship|AntCollection
 ```
-Well, we made it this far. let's step it up a notch and define ourselves a relationship. Using the same terminology as SQLAlchemy, we're able to define a relationship by using the keyword... well... `relationship`. We indicate the model, we want a relationship with, by referencing a model that was previously defined in the yaml. Under the hood, we'll create a Many To One relationship with `AntCollection`, using its `ìd` as a foreign key.
+Well, we made it this far. let's step it up a notch and define ourselves a relationship. Using the same terminology as SQLAlchemy, we're able to define a relationship by using the keyword... well... `relationship`. We indicate the model, we want a relationship with, by referencing a model that was previously defined in the yaml. Under the hood, we'll create a Many To One relationship with `AntCollection`, using its `id` as a foreign key.
 
 ```yaml
     colonies: Backref|AntColony
 ```
-We're also able to indicate that we're interested in creating back-ref for relations that will be defined further in the yaml definition. As previously mentioned, this is the only case where you're able to reference a model that has not yet been defined, if we regard fast-alchemy as an interpretative based parser.
+We're also able to indicate that we're interested in creating back-ref for relations that will be defined further in the yaml definition. As previously mentioned, this is the only case where you're able to reference a model that has not yet been defined, if we regard fast-alchemy as interpretative based.
 
 
 ## Defining instances
@@ -118,15 +118,31 @@ AntColony:
       formicarium: PAnts
 ```
 
-As you can see, pretty straightforward. The `instances` key holds a list of key/value pairs where you populate each column you defined in your models. You can populate a relation column by using the reference column you defined for the related model. In the example above, all models are using the `name` column as their reference column.
+As you can see, pretty straightforward. The `instances` key holds a list of key/value pairs where you populate each column you defined in your model. You can populate a relation column by using the reference column you defined for the related model. In the example above, all models are using the `name` column as their reference column.
 
-Keep in mind that, here as well, the file is read and evaluated in an interpretive mindset. This means that if you reference instances, they will need to have been defined earlier in the file.
+Keep in mind that, here as well, the file is read and evaluated with an interpretive mindset. This means that if you reference instances, they will need to have been defined earlier in the file.
+
+## Interacting with loaded models in your code
+
+While fast-alchemy is loading the models, the model classes are added to the fast-alchemy instance that is creating them. After the load is finished, you can access the model classes as an attribute of the fast-aclhemy instance
+
+```python
+engine = sa.create_engine('sqlite:///:memory:')
+Base = sa.ext.declarative.declarative_base()
+Base.metadata.bind = engine
+Session = sa.orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
+session = sa.orm.scoped_session(Session)
+
+fa = FastAlchemy(Base, session)
+fa.load('simple_case.yaml')
+session.query(fa.AntColony).all()
+```
 
 ## Polymorphism
 
 ### Yaml definition
 
-As sub-classing is such a natural part of programming, it would be a huge hole in the library if it didn't support polymorphism. Defining a polymorphic model is just as easy as sub-classing. You start out by defining your parent model and indicating the polymorphic discriminator. Afterwards you're able to indicate your child model inherits from the parent by appending the parent model to the model name definition. The polymorphic identities are automatically generated based in the model names
+As sub-classing is such a natural part of OO programming, it would be a huge hole in the library if it didn't support polymorphism. Defining a polymorphic model is just as easy as sub-classing. You start out by defining your parent model and indicating the polymorphic discriminator. Afterwards you're able to indicate your that child model inherits from the parent by appending the parent model to the model name definition. The polymorphic identities are automatically generated based in the model names
 
 ```yaml
 Formicarium:
@@ -213,7 +229,7 @@ def simple_case(fa):
     run_my_test(fa)
 ```
 
-### Loading models and instances seperately
+### Loading models and instances separately
 
 ```python
 def simple_case(fa):
@@ -342,4 +358,5 @@ Base.metadata.create_all()
 ## Conclusion
 
 I spent more time writing this readme than I did writing the code.
+
 Worth? maybe... probably... we'll see.
