@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.com/maarten-dp/fast-alchemy.svg?branch=master)](https://travis-ci.com/maarten-dp/fast-alchemy)
-[![Codecov](https://codecov.io/gh/maarten-dp/fast-alchemy)](https://codecov.io/gh/maarten-dp/fast-alchemy)
+[![Codecov](https://codecov.io/gh/maarten-dp/fast-alchemy/branch/master/graph/badge.svg)](https://codecov.io/gh/maarten-dp/fast-alchemy)
 
 ## Purpose
 
