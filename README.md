@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.com/maarten-dp/fast-alchemy.svg?branch=master)](https://travis-ci.com/maarten-dp/fast-alchemy)
+[![Codecov](https://codecov.io/gh/maarten-dp/fast-alchemy)](https://codecov.io/gh/maarten-dp/fast-alchemy)
+
 ## Purpose
 
 Fast-alchemy is an easy to use prototyping/testing tool that is able to create SQLAlchemy models and instances on the fly based on a yaml input file. It's able to safely load and unload models at run-time allowing a versatile and flexible workflow.
