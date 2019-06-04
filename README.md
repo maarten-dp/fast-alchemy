@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.com/maarten-dp/fast-alchemy.svg?branch=master)](https://travis-ci.com/maarten-dp/fast-alchemy)
 [![Codecov](https://codecov.io/gh/maarten-dp/fast-alchemy/branch/master/graph/badge.svg)](https://codecov.io/gh/maarten-dp/fast-alchemy)
+[![PyPI version](https://badge.fury.io/py/fast-alchemy.svg)](https://pypi.org/project/fast-alchemy/)
 
 ## Purpose
 
@@ -10,6 +11,56 @@ Use cases include, but are not limited to:
  - Building a number of different model-based testcases without having to clutter your test files with SQLA models you will only use once
 
  The general philosophy is that the tool should be simple to use for simple to build use-cases, while still allowing the possibility for complex scenarios. This is why the code is built in a way that is non-invasive to already existing code.
+
+## QuickStart
+
+Yaml `ant_colonies.yaml`
+
+```yaml
+AntColony:
+  ref: name
+  definition:
+    name: String
+    latin_name: String
+    queen_size: Float
+    worker_size: Float
+    color: String
+  instances:
+    - name: Argentine Ant
+      latin_name: Linepithema humile
+      queen_size: 1.6
+      worker_size: 1.6
+      color: brown
+    - name: Black House Ant
+      latin_name: Ochetellus
+      queen_size: 2.5
+      worker_size: 2.5
+      color: black
+```
+
+Python code
+
+```python
+import pytest
+
+
+@pytest.fixture
+def fa()
+    engine = sa.create_engine('sqlite:///:memory:')
+    Base = sa.ext.declarative.declarative_base()
+    Base.metadata.bind = engine
+    Session = sa.orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = sa.orm.scoped_session(Session)
+
+    fa = FastAlchemy(Base, session)
+    fa.load('ant_colonies.yaml')
+    return fa
+
+
+def test_it_can_test_my_test(fa):
+    ants = fa.session.query(fa.AntColony).all()
+    assert len(ants) == 2
+```
 
 ## What sets this library apart
 
