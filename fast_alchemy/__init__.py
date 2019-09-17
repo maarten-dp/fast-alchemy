@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy.inspection import inspect as sqla_inspect
 
-from .helpers import scan_current_models, load_file
+from .helpers import load_file, scan_current_models
 
 ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')

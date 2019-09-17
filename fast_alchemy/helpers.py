@@ -1,7 +1,7 @@
+import os
 from collections import OrderedDict
 
 import yaml
-import os
 
 SUPPORTED_FILE_TYPES = ['.yaml', '.yml']
 
