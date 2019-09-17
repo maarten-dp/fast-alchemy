@@ -42,6 +42,7 @@ Python code
 
 ```python
 import pytest
+import sqlalchemy as sa
 
 
 @pytest.fixture

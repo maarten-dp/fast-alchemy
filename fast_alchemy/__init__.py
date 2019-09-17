@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy.inspection import inspect as sqla_inspect
 
-from .helpers import ordered_load, scan_current_models
+from .helpers import scan_current_models, load_file
 
 ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')
@@ -18,6 +18,7 @@ class Options:
         self.instance_loader = kwargs.pop('instance_loader', InstanceLoader)
         self.class_builder = kwargs.pop('class_builder', ClassBuilder)
         self.field_builder = kwargs.pop('field_builder', FieldBuilder)
+        self.file_loader = kwargs.pop('file_loader', load_file)
 
 
 class FieldBuilder:
@@ -164,9 +165,9 @@ class FastAlchemy:
 
     def _load_file(self, file_or_raw):
         raw = file_or_raw
+
         if isinstance(file_or_raw, str):
-            with open(file_or_raw, 'r') as fh:
-                raw = ordered_load(fh)
+            raw = load_file(file_or_raw)
         return raw
 
     def load(self, filepath):

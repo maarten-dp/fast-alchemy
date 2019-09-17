@@ -1,6 +1,13 @@
 from collections import OrderedDict
 
 import yaml
+import os
+
+SUPPORTED_FILE_TYPES = ['.yaml', '.yml']
+
+
+class UnsupportedFileType(Exception):
+    pass
 
 
 # credit to https://stackoverflow.com/
@@ -25,3 +32,11 @@ def scan_current_models(db):
         if isinstance(klass, type) and issubclass(klass, db.Model):
             classes[name] = klass
     return classes
+
+
+def load_file(filename):
+    ext = os.path.splitext(filename)[-1]
+    if ext not in SUPPORTED_FILE_TYPES:
+        raise UnsupportedFileType(f'{ext} not is not a supported file type')
+    with open(filename, 'r') as fh:
+        return ordered_load(fh)
