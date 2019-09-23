@@ -165,9 +165,8 @@ class FastAlchemy:
 
     def _load_file(self, file_or_raw):
         raw = file_or_raw
-
         if isinstance(file_or_raw, str):
-            raw = load_file(file_or_raw)
+            raw = self.options.file_loader(file_or_raw)
         return raw
 
     def load(self, filepath):
