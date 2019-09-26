@@ -15,6 +15,7 @@ AntCollection:
       location: My bedroom at my father's
 
 Formicarium:
+  ref: name
   definition:
     name: String
     formicarium_type: String

@@ -68,8 +68,10 @@ def test_it_can_export_models_to_python_code(temp_file):
     spec.loader.exec_module(module)
 
     fa = FastAlchemy(module.Base, module.session)
-    fa.load_instances(os.path.join(DATA_DIR, 'instances.yaml'))
+    instances = fa.load_instances(os.path.join(DATA_DIR, 'instances.yaml'))
     session = module.session
+    session.add_all(instances.values())
+    session.commit()
     assert len(session.query(module.AntCollection).all()) == 4
     assert len(session.query(module.SandwichFormicarium).all()) == 3
     assert len(session.query(module.FreeStandingFormicarium).all()) == 2
