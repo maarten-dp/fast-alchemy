@@ -1,7 +1,7 @@
 from collections import defaultdict, namedtuple
 
 import sqlalchemy as sa
-from sqlalchemy import orm
+from sqlalchemy import and_, or_, orm
 from sqlalchemy.inspection import inspect as sqla_inspect
 
 from .helpers import load_file, scan_current_models
@@ -50,6 +50,53 @@ class FieldBuilder:
         fk_relation = '{}.id'.format(field_info.field_args[0].lower())
         fk = sa.Column(fk_name, sa.Integer, sa.ForeignKey(fk_relation))
         return fk_name, fk
+
+
+def get_ref_from_instance(instance, ref, sep):
+    keys = ref.split(sep)
+    values = [instance.get(k, 'None') for k in keys]
+    return dict(zip(keys, values))
+
+
+def get_definition_from_physical_ref(instance_ref, ref, sep):
+    keys = ref.split(sep)
+    values = instance_ref.split(sep)
+    return dict(zip(keys, values))
+
+
+def scan_attributes(klass):
+    attributes = []
+    for column in sqla_inspect(klass).columns:
+        attributes.append(column.key)
+    return attributes
+
+
+def scan_relations(klass):
+    relations = []
+    for rel in sqla_inspect(klass).relationships:
+        if rel.direction.name == 'MANYTOONE':
+            relations.append((rel.key, rel.mapper.class_.__name__))
+    return relations
+
+
+def scan_all_relations(klass):
+    relations = []
+    for rel in sqla_inspect(klass).relationships:
+        relations.append((rel.key, rel.mapper.class_.__name__))
+    return relations
+
+
+def instance_to_ref(instances, instance, ref, sep, base_model):
+    physical_ref = []
+    keys = ref.split(sep)
+    for key in keys:
+        attr = getattr(instance, key)
+        if isinstance(attr, base_model):
+            klass_name = attr.__class__.__name__
+            ref = instances[klass_name]['ref']
+            attr = instance_to_ref(instances, attr, ref, sep, base_model)
+        physical_ref.append(str(attr))
+    return sep.join(physical_ref)
 
 
 class ClassBuilder:
@@ -118,27 +165,16 @@ class InstanceLoader:
         self.ref_mapping = ref_mapping
         self.sep = separator
 
-    def _scan_relations(self, klass):
-        relations = []
-        for rel in sqla_inspect(klass).relationships:
-            if rel.direction.name == 'MANYTOONE':
-                relations.append((rel.key, rel.mapper.class_.__name__))
-        return relations
-
-    def _scan_all_relations(self, klass):
-        relations = []
-        for rel in sqla_inspect(klass).relationships:
-            relations.append((rel.key, rel.mapper.class_.__name__))
-        return relations
-
     def load_instance(self, class_info, ref_name, instances, instance_refs):
         klass_name = class_info.class_name
         klass = self.classes[klass_name]
         # create the instances so that they are available in the ref
         for definition in instances:
+            ref = self.build_ref(klass_name, definition, ref_name)
+            if ref in instance_refs:
+                continue
             instance = self.build_instance(klass, definition, instance_refs,
                                            ref_name)
-            ref = self.build_ref(klass_name, definition, ref_name)
             instance_refs[ref] = instance
 
     def link_relations(self, class_info, ref_name, instances, instance_refs):
@@ -147,7 +183,7 @@ class InstanceLoader:
         for definition in instances:
             ref = self.build_ref(klass_name, definition, ref_name)
             instance = instance_refs[ref]
-            for relation, rel_klass_name in self._scan_relations(klass):
+            for relation, rel_klass_name in scan_relations(klass):
                 if relation in definition:
                     self.build_relation(instance, rel_klass_name, definition,
                                         instance_refs, relation)
@@ -160,36 +196,31 @@ class InstanceLoader:
         return candidates
 
     def build_instance(self, klass, definition, instance_refs, ref_name):
-        rels = [r for (r, k) in self._scan_all_relations(klass)]
+        rels = [r for (r, k) in scan_all_relations(klass)]
         attributes = {k: v for (k, v) in definition.items() if k not in rels}
-        if self.auto_load:
-            attrs = ref_name.split(self.sep)
-            fltr = {
-                attr: definition.get(attr)
-                for attr in attrs if attr in attributes
-            }
-            qry = self.db.session.query(klass)
-            if fltr:
-                instance = qry.filter_by(**fltr).one_or_none()
-                if instance:
-                    return instance
         return klass(**attributes)
 
     def build_relation(self, instance, klass_name, definition, instance_refs,
                        relation):
-        candidates = self.get_relation_candidates(klass_name)
-        instances = []
         ref_name = definition[relation]
 
-        if not instances:
+        def get_instance(candidates):
+            instances = []
             for candidate in candidates:
                 clean_ref = self.clean_ref(candidate, ref_name)
                 related_instance = instance_refs.get(clean_ref)
                 if related_instance:
                     instances.append(related_instance)
+            return instances
+
+        instances = get_instance([klass_name])
+        if not instances:
+            instances = get_instance(self.get_relation_candidates(klass_name))
 
         if not instances and self.auto_load:
-            instances = self._load_from_db(candidates, ref_name, instance_refs)
+            instances = self._load_from_db(
+                self.get_relation_candidates(klass_name), ref_name,
+                instance_refs)
 
         if not instances:
             raise Exception(f'{ref_name} not in file or database')
@@ -283,6 +314,12 @@ class FastAlchemy:
         self.class_registry.update(classes)
         raw_instances = self._load_file(file_or_raw)
 
+        # remove notion of subclassing
+        raw_instances = {
+            self._parse_class_definition(k).class_name: v
+            for k, v in raw_instances.items()
+        }
+
         ref_mapping = {}
         for klass_name, definition in raw_instances.items():
             ref_mapping[klass_name.split('|')[0]] = definition['ref']
@@ -296,6 +333,7 @@ class FastAlchemy:
         )
         if not instance_refs:
             instance_refs = {}
+        instance_refs.update(self._pre_load_existing_instances(raw_instances))
 
         self._initialisation(raw_instances, instance_refs,
                              loader.load_instance)
@@ -304,9 +342,64 @@ class FastAlchemy:
 
         return instance_refs
 
+    def _pre_load_existing_instances(self, raw_instances):
+        instance_refs = {}
+        for class_definition, fields in raw_instances.items():
+            physical_refs = []
+            for instance in fields.get('instances', []):
+                ref = get_ref_from_instance(instance, fields['ref'],
+                                            self.options.separator)
+                physical_refs.append(ref)
+
+            class_info = self._parse_class_definition(class_definition)
+            klass = self.class_registry[class_info.class_name]
+
+            # assemble data to construct filters with.
+            fltrs = []
+            for rel, rel_klass in scan_all_relations(klass):
+                rel_klass = self.class_registry[rel_klass]
+                for ref in physical_refs:
+                    if rel in ref:
+                        definition = get_definition_from_physical_ref(
+                            ref[rel], raw_instances[rel_klass.__name__]['ref'],
+                            self.options.separator)
+                        definition = {
+                            k: v
+                            for k, v in definition.items()
+                            if k in scan_attributes(rel_klass) and v != 'None'
+                        }
+                        ref[rel] = definition
+
+            # transform filterdata into sqla filters
+            fltrs = []
+            for ref in physical_refs:
+                fltr = []
+                for key, value in ref.items():
+                    if value == 'None':
+                        continue
+                    if isinstance(value, dict):
+                        if not value:
+                            continue
+                        fltr.append(getattr(klass, key).has(**value))
+                    else:
+                        fltr.append(getattr(klass, key) == value)
+                fltrs.append(and_(*fltr))
+            if not fltrs:
+                continue
+
+            # load potentially existing instances
+            loaded_instances = self.session.query(klass).filter(
+                or_(*fltrs)).all()
+            for instance in loaded_instances:
+                instance_ref = instance_to_ref(
+                    raw_instances, instance, fields['ref'],
+                    self.options.separator, self.Model)
+                instance_ref = f'{class_info.class_name}|{instance_ref}'
+                instance_refs[instance_ref] = instance
+        return instance_refs
+
     def _initialisation(self, raw_instances, instance_refs, execute_fn):
-        for idx, (class_definition,
-                  fields) in enumerate(raw_instances.items()):
+        for class_definition, fields in raw_instances.items():
             if not fields.get('instances'):
                 continue
             class_info = self._parse_class_definition(class_definition)
