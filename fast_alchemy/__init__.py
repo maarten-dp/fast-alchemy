@@ -394,7 +394,8 @@ class FastAlchemy:
                 instance_ref = instance_to_ref(
                     raw_instances, instance, fields['ref'],
                     self.options.separator, self.Model)
-                instance_ref = '{}|{}'.format(class_info.class_name, instance_ref)
+                instance_ref = '{}|{}'.format(class_info.class_name,
+                                              instance_ref)
                 instance_refs[instance_ref] = instance
         return instance_refs
 
