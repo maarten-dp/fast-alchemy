@@ -30,6 +30,9 @@ jobs:
       name: "Linter"
       script: pre-commit run --all-files --show-diff-on-failure
     - stage: deploy
+      script: skip
+      before_install: skip
+      install: skip
       deploy:
         skip_cleanup: true
         provider: pypi
