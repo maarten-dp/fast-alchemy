@@ -37,6 +37,6 @@ def scan_current_models(db):
 def load_file(filename):
     ext = os.path.splitext(filename)[-1]
     if ext not in SUPPORTED_FILE_TYPES:
-        raise UnsupportedFileType(f'{ext} not is not a supported file type')
+        raise UnsupportedFileType('{} not is not a supported file type'.format(ext))
     with open(filename, 'r') as fh:
         return ordered_load(fh)

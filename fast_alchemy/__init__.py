@@ -223,9 +223,9 @@ class InstanceLoader:
                 instance_refs)
 
         if not instances:
-            raise Exception(f'{ref_name} not in file or database')
+            raise Exception('{} not in file or database'.format(ref_name))
         if len(instances) > 1:
-            raise Exception(f'Too many results for {ref_name}')
+            raise Exception('Too many results for {}'.format(ref_name))
         related_instance = instances[0]
         setattr(instance, relation, related_instance)
 
@@ -252,14 +252,14 @@ class InstanceLoader:
                 ref_key = definition[name]
             names.append(str(ref_key).strip())
         instance_ref = self.sep.join(names)
-        return f'{klass_name}|{instance_ref}'
+        return '{}|{}'.format(klass_name, instance_ref)
 
     def clean_ref(self, klass_name, ref_name):
         names = []
         for name in ref_name.split(self.sep):
             names.append(name.strip())
         instance_ref = self.sep.join(names)
-        return f'{klass_name}|{instance_ref}'
+        return '{}|{}'.format(klass_name, instance_ref)
 
 
 class FastAlchemy:
@@ -394,7 +394,7 @@ class FastAlchemy:
                 instance_ref = instance_to_ref(
                     raw_instances, instance, fields['ref'],
                     self.options.separator, self.Model)
-                instance_ref = f'{class_info.class_name}|{instance_ref}'
+                instance_ref = '{}|{}'.format(class_info.class_name, instance_ref)
                 instance_refs[instance_ref] = instance
         return instance_refs
 
