@@ -10,7 +10,7 @@ Use cases include, but are not limited to:
  - Prototyping an application where the ORM model is subject to change
  - Building a number of different model-based testcases without having to clutter your test files with SQLA models you will only use once
 
- The general philosophy is that the tool should be simple to use for simple to build use-cases, while still allowing the possibility for complex scenarios. This is why the code is built in a way that is non-invasive to already existing code.
+ The general philosophy is that the tool should be simple to use for simple to build use cases, while still allowing the possibility for complex scenarios. This is why the code is built in a way that is non-invasive to already existing code.
 
 ## QuickStart
 
@@ -229,7 +229,7 @@ session.query(fa.AntColony).all()
 
 ### Yaml definition
 
-As sub-classing is such a natural part of OO programming, it would be a huge hole in the library if it didn't support polymorphism. Defining a polymorphic model is just as easy as sub-classing. You start out by defining your parent model and indicating the polymorphic discriminator. Afterwards you're able to indicate your that child model inherits from the parent by appending the parent model to the model name definition. The polymorphic identities are automatically generated based in the model names
+As sub-classing is such a natural part of OO programming, it would be a huge hole in the library if it didn't support polymorphism. Defining a polymorphic model is just as easy as sub-classing. You start out by defining your parent model and indicating the polymorphic discriminator. Afterwards you're able to indicate your that child model inherits from the parent by appending the parent model to the model name definition. The polymorphic identities are automatically generated based on the model names
 
 ```yaml
 Formicarium:
