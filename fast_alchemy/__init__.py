@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict, namedtuple
 
 import sqlalchemy as sa
@@ -198,7 +199,11 @@ class InstanceLoader:
     def build_instance(self, klass, definition, instance_refs, ref_name):
         rels = [r for (r, k) in scan_all_relations(klass)]
         attributes = {k: v for (k, v) in definition.items() if k not in rels}
-        return klass(**attributes)
+        try:
+            return klass(**attributes)
+        except Exception as e:
+            msg = "Could not initialize an instance for {} using {}: {}"
+            raise Exception(msg.format(klass.__name__, attributes, e))
 
     def build_relation(self, instance, klass_name, definition, instance_refs,
                        relation):
@@ -223,7 +228,10 @@ class InstanceLoader:
                 instance_refs)
 
         if not instances:
-            raise Exception('{} not in file or database'.format(ref_name))
+            msg = "Searched types: {}".format(', '.join(
+                self.get_relation_candidates(klass_name)))
+            raise Exception('{} not in file or database. {}'.format(
+                ref_name, msg))
         if len(instances) > 1:
             raise Exception('Too many results for {}'.format(ref_name))
         related_instance = instances[0]
@@ -356,7 +364,8 @@ class FastAlchemy:
 
             # assemble data to construct filters with.
             fltrs = []
-            for rel, rel_klass in scan_all_relations(klass):
+            relations = scan_all_relations(klass)
+            for rel, rel_klass in relations:
                 rel_klass = self.class_registry[rel_klass]
                 for ref in physical_refs:
                     if rel in ref:
@@ -372,6 +381,7 @@ class FastAlchemy:
 
             # transform filterdata into sqla filters
             fltrs = []
+            rel_names = [r[0] for r in relations]
             for ref in physical_refs:
                 fltr = []
                 for key, value in ref.items():
@@ -380,7 +390,11 @@ class FastAlchemy:
                     if isinstance(value, dict):
                         if not value:
                             continue
-                        fltr.append(getattr(klass, key).has(**value))
+                        if key in rel_names:
+                            fltr.append(getattr(klass, key).has(**value))
+                        else:
+                            fltr.append(
+                                getattr(klass, key) == json.dumps(value))
                     else:
                         fltr.append(getattr(klass, key) == value)
                 fltrs.append(and_(*fltr))
