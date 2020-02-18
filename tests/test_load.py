@@ -76,3 +76,21 @@ def test_it_can_export_models_to_python_code(temp_file):
     assert len(session.query(module.SandwichFormicarium).all()) == 3
     assert len(session.query(module.FreeStandingFormicarium).all()) == 2
     assert len(session.query(module.AntColony).all()) == 6
+
+
+def test_it_can_preloads_the_relations():
+    engine = sa.create_engine('sqlite:///:memory:')
+    Base = sa.ext.declarative.declarative_base()
+    Base.metadata.bind = engine
+    Session = sa.orm.sessionmaker(
+        autocommit=False, autoflush=False, bind=engine)
+    session = sa.orm.scoped_session(Session)
+
+    fa = FastAlchemy(Base, session)
+    fa.load(os.path.join(DATA_DIR, 'instances.yaml'))
+    session.commit()
+
+    fa.load_instances(
+        os.path.join(DATA_DIR, 'single_model.yaml'),
+        auto_load=True,
+        ref_mapping={'Formicarium': 'name'})

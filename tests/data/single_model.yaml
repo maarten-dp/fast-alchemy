@@ -1,0 +1,9 @@
+AntColony:
+  ref: name
+  instances:
+    - name: Apomyrma
+      latin_name: Apomyrma stygia
+      queen_size: 1.2
+      worker_size: 1.2
+      color: yellow
+      formicarium: PAnts
