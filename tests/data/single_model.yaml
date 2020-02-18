@@ -1,0 +1,16 @@
+AntColony:
+  ref: name
+  definition:
+    name: String
+    latin_name: String
+    queen_size: Float
+    worker_size: Float
+    color: String
+    formicarium: relationship|Formicarium
+  instances:
+    - name: Apomyrma
+      latin_name: Apomyrma stygia
+      queen_size: 1.2
+      worker_size: 1.2
+      color: yellow
+      formicarium: PAnts
