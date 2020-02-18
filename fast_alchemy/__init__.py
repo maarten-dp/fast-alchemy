@@ -321,7 +321,7 @@ class FastAlchemy:
                        file_or_raw,
                        auto_load=False,
                        instance_refs=None,
-                       ref_mapping={}):
+                       ref_mapping=None):
         classes = scan_current_models(self)
         self.class_registry.update(classes)
         raw_instances = self._load_file(file_or_raw)
@@ -332,6 +332,8 @@ class FastAlchemy:
             for k, v in raw_instances.items()
         }
 
+        if ref_mapping is None:
+            ref_mapping = {}
         for klass_name, definition in raw_instances.items():
             ref_mapping[klass_name.split('|')[0]] = definition['ref']
 

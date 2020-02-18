@@ -87,8 +87,6 @@ def test_it_can_preloads_the_relations():
     session = sa.orm.scoped_session(Session)
 
     fa = FastAlchemy(Base, session)
-    with fa:
-        fa.load(os.path.join(DATA_DIR, 'instances.yaml'))
     fa.load(os.path.join(DATA_DIR, 'instances.yaml'))
     session.commit()
 
