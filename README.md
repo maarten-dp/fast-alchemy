@@ -197,7 +197,7 @@ Formicarium:
     - name: PedAntic
       width: 10
     - name: PedAntic
-      widt: 15
+      width: 15
 
 AntColony:
   ref: name
