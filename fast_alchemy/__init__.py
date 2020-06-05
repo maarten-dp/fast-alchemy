@@ -2,10 +2,12 @@ import json
 from collections import defaultdict, namedtuple
 
 import sqlalchemy as sa
-from sqlalchemy import and_, or_, orm
+from sqlalchemy import and_, or_, orm, String
 from sqlalchemy.inspection import inspect as sqla_inspect
+from sqlalchemy.sql.expression import cast
 
 from .helpers import load_file, scan_current_models
+
 
 ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')
@@ -398,8 +400,8 @@ class FastAlchemy:
                         if key in rel_names:
                             fltr.append(getattr(klass, key).has(**value))
                         else:
-                            fltr.append(
-                                getattr(klass, key) == json.dumps(value))
+                            attr = cast(getattr(klass, key), String())
+                            fltr.append(attr == json.dumps(value))
                     else:
                         fltr.append(getattr(klass, key) == value)
                 fltrs.append(and_(*fltr))
