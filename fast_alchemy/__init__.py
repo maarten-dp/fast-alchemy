@@ -2,12 +2,11 @@ import json
 from collections import defaultdict, namedtuple
 
 import sqlalchemy as sa
-from sqlalchemy import and_, or_, orm, String
+from sqlalchemy import String, and_, or_, orm
 from sqlalchemy.inspection import inspect as sqla_inspect
 from sqlalchemy.sql.expression import cast
 
 from .helpers import load_file, scan_current_models
-
 
 ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')
