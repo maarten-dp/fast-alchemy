@@ -6,7 +6,7 @@ from sqlalchemy import String, and_, or_, orm
 from sqlalchemy.inspection import inspect as sqla_inspect
 from sqlalchemy.sql.expression import cast
 
-from .helpers import load_file, scan_current_models, drop_models
+from .helpers import drop_models, load_file, scan_current_models
 
 ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')
@@ -448,7 +448,6 @@ class FastAlchemy:
     def create_models(self, models=None):
         self.execute_for(self.get_tables(models), 'create_all')
 
-
     def drop_models(self, models=None):
         self.execute_for(self.get_tables(models), 'drop_all')
 
@@ -458,8 +457,7 @@ class FastAlchemy:
         drop_models(
             base_model=self.Model,
             all_model_names=self.class_registry.keys(),
-            model_names_to_drop=models
-        )
+            model_names_to_drop=models)
 
         for model_name in models:
             delattr(self, model_name)

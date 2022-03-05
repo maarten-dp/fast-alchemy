@@ -1,10 +1,9 @@
 import os
 from collections import OrderedDict
 
-import yaml
 import sqlalchemy
+import yaml
 from packaging import version
-
 
 SUPPORTED_FILE_TYPES = ['.yaml', '.yml']
 
@@ -60,7 +59,7 @@ def drop_models_1_3(base_model, all_model_names, model_names_to_drop):
 
 
 def get_registered_models_1_4(base_model):
-        return base_model.registry._class_registry.items()
+    return base_model.registry._class_registry.items()
 
 
 def drop_models_1_4(base_model, all_model_names, model_names_to_drop):
@@ -76,8 +75,7 @@ def drop_models_1_4(base_model, all_model_names, model_names_to_drop):
 
     for model_name in models:
         base_model.metadata.remove(
-            base_model.metadata.tables[model_name.lower()]
-        )
+            base_model.metadata.tables[model_name.lower()])
 
 
 get_registered_models = get_registered_models_1_3
