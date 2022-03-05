@@ -6,7 +6,7 @@ from sqlalchemy import String, and_, or_, orm
 from sqlalchemy.inspection import inspect as sqla_inspect
 from sqlalchemy.sql.expression import cast
 
-from .helpers import load_file, scan_current_models
+from .helpers import load_file, scan_current_models, drop_models
 
 ClassInfo = namedtuple('ClassInfo', 'class_name,inherits_class,inherits_name')
 FieldInfo = namedtuple('FieldInfo', 'field_name,field_definition,field_args')
@@ -448,16 +448,22 @@ class FastAlchemy:
     def create_models(self, models=None):
         self.execute_for(self.get_tables(models), 'create_all')
 
+
     def drop_models(self, models=None):
         self.execute_for(self.get_tables(models), 'drop_all')
-        for class_name in models or self.class_registry.keys():
-            reg = self.Model._decl_class_registry['_sa_module_registry']
-            reg.contents[__name__]._remove_item(class_name)
-            self.Model._decl_class_registry.pop(class_name)
-            self.Model.metadata.remove(
-                self.Model.metadata.tables[class_name.lower()])
-            delattr(self, class_name)
-            self.class_registry = {}
+
+        if models is None:
+            models = self.class_registry.keys()
+
+        drop_models(
+            base_model=self.Model,
+            all_model_names=self.class_registry.keys(),
+            model_names_to_drop=models
+        )
+
+        for model_name in models:
+            delattr(self, model_name)
+            self.class_registry.pop(model_name)
 
     def execute_for(self, tables, operation):
         op = getattr(self.Model.metadata, operation)
